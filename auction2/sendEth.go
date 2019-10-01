@@ -12,8 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-var hushSend bool
-
 func sendEth(ec bind.ContractTransactor, sender string, recipient string, amount *big.Int, gasLimit uint64) (*types.Transaction, error) {
 	senderKey, _ := memorykeys.GetPrivateKey(sender)
 	senderAddress, _ := memorykeys.GetAddress(sender)

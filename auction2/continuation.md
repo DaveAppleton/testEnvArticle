@@ -156,4 +156,83 @@ Then we use that hash and send our bid (assuming that the account `user01` has b
     client.Commit()
 ```
 
+---
 
+SendEth code
+
+``` go
+func sendEth(ec bind.ContractTransactor, sender string, recipient string, amount *big.Int, gasLimit uint64) (*types.Transaction, error) {
+  senderKey, _ := memorykeys.GetPrivateKey(sender)
+  senderAddress, _ := memorykeys.GetAddress(sender)
+  recipientAddress, _ := memorykeys.GetAddress(recipient)
+  nonce, err := ec.PendingNonceAt(context.Background(), *senderAddress)
+  if err != nil {
+    return nil, err
+  }
+  gasPrice, err := ec.SuggestGasPrice(context.Background())
+  if err != nil {
+    return nil, err
+  }
+  s := types.HomesteadSigner{}
+  data := common.FromHex("0x")
+  t := types.NewTransaction(nonce, *recipientAddress, amount, gasLimit, gasPrice, data)
+  tx, err := types.SignTx(t, s, senderKey)
+  if err != nil {
+    return nil, err
+  }
+  err = ec.SendTransaction(context.Background(), tx)
+  return tx, err
+}
+```
+
+Main code
+
+``` go
+func main() {
+  client, err := getClient()
+  if err != nil {
+    log.Fatal(err)
+  }
+  startBids := getTime("13/09/19")
+  endBids := getTime("15/09/19")
+  startReveal := endBids
+  endReveal := getTime("17/09/19")
+  minimumBid, _ := etherUtils.StrToEther("4.7")
+  wallet, _ := memorykeys.GetAddress("wallet")
+  bankTx, _ := memorykeys.GetTransactor("banker")
+  txes := make(map[string]*types.Transaction)
+  for user := 0; user < 100; user++ {
+    userID := fmt.Sprintf("user%02d", user)
+    txes[userID], _ = sendEth(client, "banker", userID, new(big.Int).Add(minimumBid, etherUtils.OneEther()), 21000)
+  }
+  auctionAddress, tx, auctionContract, err := contracts.DeployAuction(bankTx, client, startBids, endBids, startReveal, endReveal, minimumBid, *wallet)
+  chkerr(err)
+  fmt.Println(auctionAddress.Hex(), tx.Hash().Hex())
+  client.Commit()
+  min, err := auctionContract.MinimumBid(nil)
+  chkerr(err)
+  fmt.Println("minumum bid is ", etherUtils.EtherToStr(min))
+  fmt.Println("time :", currentTime())
+  isBiddingOpen(auctionContract)
+  jumpTo(startBids)
+  fmt.Println("time :", currentTime())
+  isBiddingOpen(auctionContract)
+  userTx, _ := memorykeys.GetTransactor("user01")
+  hash, err := auctionContract.CalculateHash(nil, minimumBid, []byte("mary had a little lamb"))
+  if err != nil {
+    fmt.Println(err)
+    os.Exit(1)
+  }
+  userTx.Value = minimumBid
+  tx, err = auctionContract.BiddingTime(userTx, hash)
+  if err != nil {
+    fmt.Println("bid : ", err)
+    os.Exit(1)
+  }
+  client.Commit()
+}
+```
+
+You can find the code and articles in github at
+
+https://github.io/DaveAppleton/testEnvArticle
