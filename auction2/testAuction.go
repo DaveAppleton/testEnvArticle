@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"math/big"
@@ -118,4 +119,9 @@ func main() {
 		os.Exit(1)
 	}
 	client.Commit()
+	contractBalance, _ := client.BalanceAt(context.Background(), auctionAddress, nil)
+	userAddress, _ := memorykeys.GetAddress("user01")
+	userBalance, _ := client.BalanceAt(context.Background(), *userAddress, nil)
+	fmt.Println("User Balance ", etherUtils.EtherToStr(userBalance))
+	fmt.Println("Auction Balance ", etherUtils.EtherToStr(contractBalance))
 }

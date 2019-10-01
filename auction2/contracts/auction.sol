@@ -2,7 +2,7 @@
  *Submitted for verification at Etherscan.io on 2019-08-27
 */
 
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.00;
 // produced by the Solididy File Flattener (c) David Appleton 2018
 // contact : dave@akomba.com
 // released under Apache 2.0 licence
@@ -133,7 +133,7 @@ contract auction is Ownable {
 
     uint256 public  minimumBid;
 
-    address private  wallet;
+    address payable private  wallet;
 
     event  MinimumBid(uint256 _minimumBid);
 
@@ -183,7 +183,7 @@ contract auction is Ownable {
         _;
     }
 
-    constructor(uint256 _startBids, uint256 _endBids, uint256 _startReveal, uint256 _endReveal, uint256 _minimumBid, address  _wallet)
+    constructor(uint256 _startBids, uint256 _endBids, uint256 _startReveal, uint256 _endReveal, uint256 _minimumBid, address payable _wallet)
     public {
         require(_startBids != 0, "dates must be non zero");
         require(_endBids != 0, "dates must be non zero");
@@ -208,7 +208,7 @@ contract auction is Ownable {
 
     function biddingTime(bytes32 _hash) public payable duringBidding {
         require(! information[msg.sender].haveBid, "only one bid per address");
-        require(msg.value > minimumBid,"Amount sent is less than minimum bid");
+        require(msg.value >= minimumBid,"Amount sent is less than minimum bid");
 
         data storage myData = information[msg.sender];
         myData.hashValue = _hash;
